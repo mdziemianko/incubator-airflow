@@ -14,6 +14,7 @@
 
 import ftplib
 import logging
+import re
 
 from airflow.contrib.hooks.ftp_hook import FTPHook, FTPSHook
 from airflow.operators.sensors import BaseSensorOperator
@@ -36,8 +37,11 @@ class FTPSensor(BaseSensorOperator):
     """Errors that are transient in nature, and where action can be retried"""
     transient_errors = [421, 425, 426, 434, 450, 451, 452]
 
+    """Error message is expected to start with a number - error code"""
+    error_code_pattern = re.compile("([\d]+)")
+
     @apply_defaults
-    def __init__(self, path, ftp_conn_id='ftp_default', *args, **kwargs):
+    def __init__(self, path, ftp_conn_id='ftp_default', fail_on_transient_errors=True, *args, **kwargs):
         super(FTPSensor, self).__init__(*args, **kwargs)
 
         self.path = path
@@ -51,8 +55,8 @@ class FTPSensor(BaseSensorOperator):
     def _get_error_code(self, e):
         """Extract error code from ftp exception"""
         try:
-            chunks = str(e).split(None, 1)
-            code = int(chunks[0])
+            matches = self.error_code_pattern.match(str(e))
+            code = int(matches[1])
             return code
         except ValueError:
             return None

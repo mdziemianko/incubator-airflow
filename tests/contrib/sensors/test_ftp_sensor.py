@@ -45,8 +45,11 @@ class TestFTPSensor(unittest.TestCase):
 
         self.hook_mock.get_mod_time.side_effect = \
             [error_perm("550: Can't check for file existence"),
-                error_perm("550: Directory or file does not exist"), None]
+                error_perm("550: Directory or file does not exist"), 
+                error_perm("550 - Directory or file does not exist"),
+                None]
 
+        self.assertFalse(op.poke(None))
         self.assertFalse(op.poke(None))
         self.assertFalse(op.poke(None))
         self.assertTrue(op.poke(None))
